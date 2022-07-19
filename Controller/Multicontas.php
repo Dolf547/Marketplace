@@ -17,9 +17,13 @@ class Multicontas extends YS_Controller
         $this->client_idML2    = '6481354972963130';
         $this->secret_keyML2   = 'd6LpwDSvUHGk7LCv4R6w2UBFkrXZcXAI';
         $this->load->library('MPRestClient');
+        $this->load->helper('mercadolivre_helper');
         $this->load->model('Mercadolivre_model');
         $this->load->model("Usuarios_model");
         $this->load->model("UsuarioEmpresa_model");
+        $this->load->model("Tipo_tributacao_icms_model");
+        $this->load->model("Armazens_model");
+        $this->load->model("Produtos_model");
     }
 
 
@@ -37,7 +41,7 @@ class Multicontas extends YS_Controller
             $empresas = $this->UsuarioEmpresa_model->getEmpresas($_SESSION['id']);
         }
         $usuarios = $this->UsuarioEmpresa_model->getUsuarios2($empresas, $this->input->get('order'));
-
+     
 
         $this->view('multicontas.index', [
             'usuarios' => $usuarios,
@@ -45,13 +49,6 @@ class Multicontas extends YS_Controller
     }
 
 
-   /*  public function pagina()
-    {
-        $this->view('multicontas.pagina', [
-        ]);
-
-    }
- */
 
 
     public function getcontas()
@@ -76,25 +73,7 @@ class Multicontas extends YS_Controller
         /*  var_dump($access_data["response"]);
           die; */
         //salva o user id 
-        if (!empty($access_data["response"]["user_id"])) {
-
-            $savemarketplaces = [
-                "app_id" => $this->client_idML2,
-                "secret_key" => $this->secret_keyML2,
-                'access_token' => $access_data["response"]['access_token'],
-                'ultimo_token' => $access_data["response"]['access_token'],
-                'ultimo_refresh_token' => $access_data["response"]['refresh_token'],
-                'user_id' => $access_data["response"]["user_id"],
-                'empresa_id' => $_SESSION['id_empresa']
-
-            ];
-            $exist = $this->Mercadolivre_model->getbyIdempresa($_SESSION['id_empresa']);
-            if ($exist) {
-                $this->Mercadolivre_model->edit($_SESSION['id_empresa'], $savemarketplaces);
-            } else {
-                $this->Mercadolivre_model->save($savemarketplaces);
-            }
-        }
+       
 
         if (!empty($access_data["response"]["user_id"])) {
 
@@ -150,7 +129,35 @@ class Multicontas extends YS_Controller
                 //adiciona as multiplas contas   no usuarios        
                 $lCriaconta     = false;
                 $empresa_idAABB = $_SESSION['id_empresa'];
-                $exist2 =  $this->Usuarios_model->getUsuarioByEmail2($results['email']);
+
+                $exist2 =  $this->Usuarios_model->getUsuarios($empresa_idAABB);
+             
+             $totalcontasml =  $this->Mercadolivre_model->getbyIdempresa($_SESSION['id_empresa'], $results['email']);
+             $existeml = $totalcontasml->id_usuario;
+
+
+
+                
+             $existusuario = $this->Usuarios_model->getUsuarioByEmail($results['email']);
+             $existusuarioid = $existusuario->id_usuario;
+
+    
+            // var_dump($totalcontasml);
+            /*  foreach ($totalcontasml as $row1){
+              //  var_dump($row1->id_usuario);
+                foreach ($exist2 as $row){
+                    //var_dump($totalcontasml);
+                        if($row->id_usuario == $row1->id_usuario){
+                          //  echo "existe";
+                         $id_usuario = $row->id_usuario;
+                         $exist = true;
+                                     //verificar se ja existe o id_usuario no marketplacesconnectd
+
+
+                        }
+                }
+            } */
+          
 
                 $data = [
                     'ativo' => 1,
@@ -163,21 +170,53 @@ class Multicontas extends YS_Controller
                     'nivel_usuario' => 1,  /* VASCO */
                     'mercadolibre' => true,
                 ];
-                if ($exist2) {
-                    $isSaved = $this->Usuarios_model->editUsuario($exist2->id_usuario, $data);
-                    /*  var_dump($data);
-                die; */
+                
+                if ($existusuario) {
+                    //atualizar empresa do usuario
+
+                    $empr = [
+                        'id_empresa' => $empresa_idAABB,
+                    ];
+
+                    $this->UsuarioEmpresa_model->editbyusuarui($existusuarioid, $empr);
+                    $isSaved = $this->Usuarios_model->editUsuario($existusuarioid, $data);
                 } else {
                     $data['datacri'] = date('Y-m-d');
                     $data['usercri'] = $this->session->userdata('nome');
-                    $isSaved = $this->Usuarios_model->addUsuario($data);
+                    $salvo = $this->Usuarios_model->addUsuario($data);
+              
                     $data = [
                         'id_empresa' => $_SESSION['id_empresa'],
-                        'id_usuario' => $isSaved,
+                        'id_usuario' => $salvo,
                     ];
                     $this->UsuarioEmpresa_model->add($data);
                 }
             }
+
+
+
+
+
+            $savemarketplaces = [
+                "app_id" => $this->client_idML2,
+                "secret_key" => $this->secret_keyML2,
+                'access_token' => $access_data["response"]['access_token'],
+                'ultimo_token' => $access_data["response"]['access_token'],
+                'ultimo_refresh_token' => $access_data["response"]['refresh_token'],
+                'user_id' => $access_data["response"]["user_id"],
+                'empresa_id' => $_SESSION['id_empresa'],
+                'email' => $results['email'],
+                'id_usuario' =>$existeml
+            ];
+                    if ($existeml) {
+                        $this->Mercadolivre_model->edit($existeml, $savemarketplaces);
+                    } else {
+                        // AKI INSERE
+                        $savemarketplaces['id_usuario'] = $salvo;
+                        $this->Mercadolivre_model->save($savemarketplaces);
+                    }
+
+
             $this->db->select('empresa_id');
             $this->db->from('mkp_marketplacesconnected');
             $this->db->where('user_id', $access_data["response"]["user_id"]);
@@ -390,4 +429,12 @@ class Multicontas extends YS_Controller
         //redirect(site_url('authentication/admin'));
         //  redirect(admin_url('mercadolivre/dashboard'));
     }
+
+
+
+
+
+
+
+
 }
