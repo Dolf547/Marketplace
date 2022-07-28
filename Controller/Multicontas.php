@@ -58,7 +58,7 @@ class Multicontas extends YS_Controller
             "client_id"         => $this->client_idML2,
             "client_secret"     => $this->secret_keyML2,
             "code"              => $_GET['code'],
-            "redirect_uri"      => 'https://localhost/yoursystem/multicontas/getcontas'
+            "redirect_uri"      => 'https://www.streetsales.com.br/multicontas/getcontas'
         );
 
         $access_data = MPRestClient::post(array(
