@@ -21,10 +21,31 @@ class Mercadolivre_model extends YS_Model{
 		return $this->db->update($this->table, $data);
 	}
 
-    public function getbyIdempresa($id, $mail)
+    public function getbyIdempresa($id)
 	{
 		$this->db->where('empresa_id', $id);
-        $this->db->where('email', $mail);
+       // $this->db->where('email', $mail);
+		return $this->db->get($this->table)->row();
+	}
+
+    
+    public function getbyIdempresaadnEmail($id, $email)
+	{
+		$this->db->where('empresa_id', $id);
+        $this->db->where('email', $email);
+		return $this->db->get($this->table)->row();
+	}
+
+    public function getByContaActive()
+	{
+		$this->db->where('active', 1);
+       // $this->db->where('email', $mail);
+		return $this->db->get($this->table)->row();
+	}
+
+    public function getByEmail($email)
+	{
+        $this->db->where('email', $email);
 		return $this->db->get($this->table)->row();
 	}
 
@@ -49,6 +70,13 @@ class Mercadolivre_model extends YS_Model{
 		$this->db->where('id_usuario', $idempresa);
 		return $this->db->update($this->table, $data);
 	}
+
+    public function editByEmail($email, $data)
+	{
+		$this->db->where('email', $email);
+		return $this->db->update($this->table, $data);
+	}
+
 
 
 
@@ -190,6 +218,11 @@ public function get_variations($value_id, $product_id)
             return $this->db->get('mkp_produtos_shipping')->result_array();    
         }
         
+    }
+
+    public function getContasMl()
+    {
+            return $this->db->get('mkp_marketplacesconnected')->result_array();    
     }
 
 
