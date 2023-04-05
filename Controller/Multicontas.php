@@ -58,7 +58,7 @@ class Multicontas extends YS_Controller
             "client_id"         => $this->client_idML2,
             "client_secret"     => $this->secret_keyML2,
             "code"              => $_GET['code'],
-            "redirect_uri"      => 'https://www.streetsales.com.br/multicontas/getcontas'
+            "redirect_uri"      => //API de redirect
         );
 
         $access_data = MPRestClient::post(array(
@@ -142,21 +142,7 @@ class Multicontas extends YS_Controller
              $existusuarioid = $existusuario->id_usuario;
 
     
-            // var_dump($totalcontasml);
-            /*  foreach ($totalcontasml as $row1){
-              //  var_dump($row1->id_usuario);
-                foreach ($exist2 as $row){
-                    //var_dump($totalcontasml);
-                        if($row->id_usuario == $row1->id_usuario){
-                          //  echo "existe";
-                         $id_usuario = $row->id_usuario;
-                         $exist = true;
-                                     //verificar se ja existe o id_usuario no marketplacesconnectd
-
-
-                        }
-                }
-            } */
+    
           
 
                 $data = [
@@ -243,179 +229,7 @@ class Multicontas extends YS_Controller
 
             }
 
-            //2 - verifica se essa conta já não existe no Idealize
-            /*  $this->db->select('empresa_id');
-                    $this->db->from('crm_mercadolivre');
-                    $this->db->where('user_id', $access_data["response"]["user_id"]);
-                    $verf = $this->db->get()->row();
-                    
-                    if ($verf) {
-                    
-                        $this->db->select('id,email,grupo');
-                        $this->db->from('crm_empresas');
-                        $this->db->where('id', $verf->empresa_id);
-                        $empresa = $this->db->get()->row();
-                    
-                        if ($empresa) {
-                    
-                            if($empresa->grupo <> 0){
-                                set_alert('warning', 'A conta que você quer adicionar já está vinculada. Caso não apareça na lista abaixo entre em contato conosco.');
-                                redirect(admin_url('settings/multiaccount'));            
-                            }
-        
-                            if ($empresa->id != $empresa_idAABB) {
-                                
-                                //adiciona a empresa no grupo
-                                $data_product = [
-                                    'empresa_id'    => $empresa->id,
-                                    'grupo_id'      => $idGrupo,
-                                    'plano'         => 1,
-                                ];                            
-                                $this->db->insert('crm_empresas_grupos_in', $data_product);                
-        
-                                $this->db->where('id', $empresa->id);
-                                $this->db->where('grupo = 0');
-                                $this->db->set('grupo', $idGrupo);
-                                $this->db->update('crm_empresas');
-        
-                            }else{
-                                $lCriaconta = true;
-                            }
-                        }                
-                    }else{
-                        $lCriaconta = true;
-                    }
-        
-                    //caso tenha que criar uma conta nova
-                    if($lCriaconta){
-                        
-                        $array = array(
-                            "access_token"=>$access_data["response"]["access_token"]
-                        );
-        
-                        $request = array(
-                            "uri" => "/users/me",
-                            "headers" => array("Authorization"=>'Bearer '.$access_data["response"]["access_token"]),
-                            "params" => $array                
-                        );
-                        $access_data3 = MPRestClient::get($request);
-        
-                        if ($access_data3["status"] == 200) {
-        
-                            $name       = "";
-                            $lastname   = "";
-                            $email      = "";
-                            $phone      = "";
-                            $document   = "";
-                            $address    = "";
-                            $city       = "";
-                            $state      = "";
-                            $socialId   = "";
-                            $companyName= "";
-                            $zipCode    = "";
-        
-                            foreach ($access_data3 as $query => $results) {
-                                
-                                $socialId   = $results["id"];
-                                $name       = $results["first_name"];
-                                $lastname   = $results["last_name"];
-                                $companyName= isset($results["company"]["corporate_name"]) ? $results["company"]["corporate_name"] : null;
-                                $phone      = isset($results["phone"]["number"]) ? $results["phone"]["number"] : null;    
-                                $email      = $results["email"];
-                                $document   = isset($results["identification"]["number"]) ? $results["identification"]["number"] : null;    
-                                $address    = isset($results["address"]["address"]) ? $results["address"]["address"] : null;
-                                $city       = isset($results["address"]["city"]) ? $results["address"]["city"] : null;
-                                $state      = isset($results["address"]["state"]) ? $results["address"]["state"] : null;
-                                $zipCode    = isset($results["address"]["zip_code"]) ? $results["address"]["zip_code"] : null;
-        
-                            }                    
-        
-                            if(check_black_list_email($email))
-                            {
-        
-                                redirect(site_url('landing'));
-                                
-                            } 
-        
-                            if(!empty($email) || !empty($socialId)){
-                                
-                                if(empty($email)){
-                                    $email = $socialId;
-                                }
-        
-                                $where = "email='".$email."' ";
-                                $checkUser = $this->DatabaseModel->access_database('crm_staff','select','',$where);        
-                                
-                                if(empty($checkUser)) {
-                                    
-                                    //verifica se ja nao existe uma empresa com esse e-mail ou id
-                                    $checkEmail = $this->DatabaseModel->access_database('crm_empresas','select','',array('email'=>$email));
-                                    if(empty($checkEmail) ) {
-        
-                                        //insere o cliente para a conta de administração
-                                        $where = "email='".$email."' AND empresa_id = 4 ";
-                                        $resultCli = $this->DatabaseModel->access_database('crm_leads','select','',$where);
-                                        
-                                        if (empty($resultCli)) {
-                                            //$CliId = $this->ldg_crate_client($name,$lastname,$email,true);
-                                            $CliId = $this->ldg_crate_client($name, $lastname, $email, true, $companyName, $phone, $document, $city, $address, $zipCode);
-        
-                                        }else{
-                                            $CliId = $resultCli[0]['id'];
-                                        } 
-        
-                                        //$eid = $this->ldg_crate_company_account($name,$lastname,$email,$CliId,true);
-                                        
-                                        //busca a data do ultimo pagamento
-                                        $this->db->select('data_pagamento,plan_id');
-                                        $this->db->from('crm_empresas');
-                                        $this->db->where('id', $empresa_idAABB);
-                                        $empresa = $this->db->get()->row();
-        
-                                        $data_pagamento = isset($empresa->data_pagamento) ? $empresa->data_pagamento : null;
-                                        $plan_id        = isset($empresa->plan_id) ? $empresa->plan_id : null;
-        
-                                        $eid = $this->ldg_crate_company_account($name,$lastname,$email,$CliId,true, $companyName, $phone, $document, $city, false, $plan_id, $data_pagamento );
-        
-                                        //search the email
-                                        $where = "email='".$email."' ";
-                                        $result = $this->DatabaseModel->access_database('crm_empresas','select','',$where);
-        
-                                        if (!empty($result)) {                                    
-                                            
-                                            $data['active']         =  1 ;
-                                            $data['empresa_id']     = $eid;
-                                            $data['app_id']         = $this->client_idML2;
-                                            $data['secret_key']     = $this->secret_keyML2;
-                                            $data['ultimo_refresh_token']  = $access_data["response"]["refresh_token"];
-                                            $data['user_id']        = $access_data["response"]["user_id"];
-                                            $data['ultimo_token']   = $access_data["response"]["access_token"];
-                                            $this->db->insert('crm_mercadolivre', $data);
-                                            $insert_id = $this->db->insert_id();
-        
-                                            $data_product = [
-                                                'empresa_id'    => $eid,
-                                                'grupo_id'      => $idGrupo,
-                                                'plano'         => 1,
-                                            ];
-                                            $this->db->insert('crm_empresas_grupos_in', $data_product);                
-                                            
-                                            $this->db->where('id', $eid);
-                                            $this->db->where('grupo = 0');
-                                            $this->db->set('grupo', $idGrupo);
-                                            $this->db->update('crm_empresas');
-        
-                                            $this->login_create_company_params($eid);
-                                            
-                                            $this->ldg_create_login_account($email,$name,$lastname,$email,$eid,"Mercado Livre",null,true,null,$socialId, null, $idGrupo);
-        
-                                            //$this->ldg_create_login_account($email,$name,$lastname,$email,$eid,"Mercado Livre",null,true,null,$socialId);
-                                        }    
-                                    }   
-                                }    
-                            }    
-                        }    
-                    } */
+           
 
 
             $this->session->set_flashdata('alert', [
